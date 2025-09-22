@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Mobile Photo Resizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 20px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            background: transparent;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #666;
+            font-weight: bold;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Camera Tab Styles */
+        .camera-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #cameraVideo {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 15px;
+            display: none;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        #capturedCanvas {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 15px;
+            display: none;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .camera-placeholder {
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            background: #f0f0f0;
+            border: 3px dashed #ccc;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            margin: 0 auto;
+        }
+
+        .camera-icon {
+            font-size: 4em;
+            color: #ccc;
+            margin-bottom: 10px;
+        }
+
+       
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 30px 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #764ba2;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin: 10px;
+            min-height: 50px;
+            touch-action: manipulation;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        /* Controls */
+        .controls {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 10px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .value-display {
+            font-weight: bold;
+            color: #667eea;
+            margin-left: 10px;
+        }
+
+        /* Image Preview */
+        .image-preview {
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .image-container {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .preview-img {
+            width: 100%;
+            max-width: 300px;
+            border-radius: 10px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .image-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .info-item {
+            margin: 5px 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .size-warning {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .size-ok {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .progress {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .download-btn {
+            width: 100%;
+            display: none;
+            margin-top: 20px;
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .status-error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+
+        .status-success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+                margin: 5px;
+            }
+            
+            h1 {
+                font-size: 1.5em;
+            }
+            
+            .btn {
+                width: 100%;
+                margin: 5px 0;
+            }
+            
+            .tab-btn {
+                padding: 12px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Mobile Photo Resizer</h1>
+        
+        <div class="tab-buttons">
+            <button class="tab-btn active" onclick="switchTab('camera')">📷 Take Photo</button>
+            <button class="tab-btn" onclick="switchTab('upload')">📁 Upload</button>
+        </div>
+
+        <!-- Camera Tab -->
+        <div id="cameraTab" class="tab-content active">
+            <div class="camera-container">
+                <div class="camera-placeholder" id="cameraPlaceholder">
+                    <div class="camera-icon">📷</div>
+                    <p>Tap to start camera</p>
+                </div>
+                <video id="cameraVideo" autoplay muted playsinline></video>
+                <canvas id="capturedCanvas"></canvas>
+            </div>
+            
+            <div class="camera-controls">
+                <button class="btn" id="startCameraBtn" onclick="startCamera()">📷 Start Camera</button>
+                <button class="btn" id="captureBtn" onclick="capturePhoto()" style="display: none;">📸 Take Photo</button>
+                <button class="btn btn-secondary" id="retakeBtn" onclick="retakePhoto()" style="display: none;">🔄 Retake</button>
+                <button class="btn btn-danger" id="stopCameraBtn" onclick="stopCamera()" style="display: none;">❌ Stop Camera</button>
+            </div>
+        </div>
+
+        
+        <div id="uploadTab" class="tab-content">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <div>Tap to select photos</div>
+                <p style="color: #999; margin-top: 10px; font-size: 12px;">Supports JPG, PNG, WebP</p>
+                <input type="file" class="file-input" id="fileInput" accept="image/*" multiple>
+            </div>
+        </div>
+
+        
+        <div class="status-message" id="statusMessage"></div>
+
+    
+        <div class="controls" id="controls">
+            <div class="control-group">
+                <label>
+                    Quality: <span class="value-display" id="qualityValue">80%</span>
+                </label>
+                <input type="range" id="qualitySlider" min="10" max="100" value="80">
+            </div>
+            
+            <div class="control-group">
+                <label>
+                    Max Width: <span class="value-display" id="widthValue">1920px</span>
+                </label>
+                <input type="range" id="widthSlider" min="200" max="4000" value="1920">
+            </div>
+            
+            <div class="control-group">
+                <label>
+                    Max Height: <span class="value-display" id="heightValue">1080px</span>
+                </label>
+                <input type="range" id="heightSlider" min="200" max="4000" value="1080">
+            </div>
+            
+            <button class="btn" onclick="processImages()">🔧 Resize Images</button>
+        </div>
+
+        <div class="progress" id="progress">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="image-preview" id="imagePreview"></div>
+        
+        <button class="btn download-btn" id="downloadBtn" onclick="downloadAll()">💾 Download All</button>
+    </div>
+
+    <script>
+        let selectedFiles = [];
+        let processedImages = [];
+        let cameraStream = null;
+        let capturedImageData = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEventListeners();
+        });
+
+        function initializeEventListeners() {
+            
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            
+            uploadArea.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', handleFileSelect);
+
+            
+            document.getElementById('qualitySlider').addEventListener('input', (e) => {
+                document.getElementById('qualityValue').textContent = e.target.value + '%';
+            });
+            document.getElementById('widthSlider').addEventListener('input', (e) => {
+                document.getElementById('widthValue').textContent = e.target.value + 'px';
+            });
+            document.getElementById('heightSlider').addEventListener('input', (e) => {
+                document.getElementById('heightValue').textContent = e.target.value + 'px';
+            });
+        }
+
+        function switchTab(tab) {
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+           
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tab + 'Tab').classList.add('active');
+            
+            // Reset state when switching tabs
+            hideControls();
+            hideStatus();
+        }
+
+        // Camera Functions
+        async function startCamera() {
+            try {
+                showStatus('Starting camera...', 'success');
+                
+                const constraints = {
+                    video: {
+                        facingMode: 'environment', 
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                };
+                
+                cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                const video = document.getElementById('cameraVideo');
+                const placeholder = document.getElementById('cameraPlaceholder');
+                
+                video.srcObject = cameraStream;
+                video.style.display = 'block';
+                placeholder.style.display = 'none';
+                
+                document.getElementById('startCameraBtn').style.display = 'none';
+                document.getElementById('captureBtn').style.display = 'inline-block';
+                document.getElementById('stopCameraBtn').style.display = 'inline-block';
+                
+                hideStatus();
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                showStatus('Camera access denied or not available. Try the Upload tab instead.', 'error');
+            }
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.getElementById('capturedCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size to video size
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Draw current video frame to canvas
+            ctx.drawImage(video, 0, 0);
+            
+           
+            canvas.toBlob(blob => {
+                capturedImageData = blob;
+                
+                // Show captured image
+                video.style.display = 'none';
+                canvas.style.display = 'block';
+                
+              
+                document.getElementById('captureBtn').style.display = 'none';
+                document.getElementById('retakeBtn').style.display = 'inline-block';
+                
+                
+                selectedFiles = [new File([blob], 'captured_photo.jpg', { type: 'image/jpeg' })];
+                showControls();
+                
+                showStatus('Photo captured! Adjust settings and resize.', 'success');
+            }, 'image/jpeg', 0.9);
+        }
+
+        function retakePhoto() {
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.getElementById('capturedCanvas');
+            
+            // Show video, hide canvas
+            video.style.display = 'block';
+            canvas.style.display = 'none';
+            
+           
+            document.getElementById('captureBtn').style.display = 'inline-block';
+            document.getElementById('retakeBtn').style.display = 'none';
+            
+            // Reset captured data
+            capturedImageData = null;
+            selectedFiles = [];
+            hideControls();
+            hideStatus();
+        }
+
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.getElementById('capturedCanvas');
+            const placeholder = document.getElementById('cameraPlaceholder');
+            
+            video.style.display = 'none';
+            canvas.style.display = 'none';
+            placeholder.style.display = 'flex';
+            
+            document.getElementById('startCameraBtn').style.display = 'inline-block';
+            document.getElementById('captureBtn').style.display = 'none';
+            document.getElementById('retakeBtn').style.display = 'none';
+            document.getElementById('stopCameraBtn').style.display = 'none';
+            
+            capturedImageData = null;
+            selectedFiles = [];
+            hideControls();
+            hideStatus();
+        }
+
+     
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            if (files.length > 0) {
+                selectedFiles = files;
+                showControls();
+                showStatus(`${files.length} image(s) selected. Adjust settings and resize.`, 'success');
+            }
+        }
+
+      
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        async function resizeImage(file, maxWidth, maxHeight, quality) {
+            return new Promise((resolve) => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+
+                img.onload = () => {
+                    let { width, height } = img;
+                    
+                    if (width > maxWidth || height > maxHeight) {
+                        const ratio = Math.min(maxWidth / width, maxHeight / height);
+                        width *= ratio;
+                        height *= ratio;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    canvas.toBlob(resolve, 'image/jpeg', quality / 100);
+                };
+
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        async function processImages() {
+            if (selectedFiles.length === 0) return;
+            
+            const quality = parseInt(document.getElementById('qualitySlider').value);
+            const maxWidth = parseInt(document.getElementById('widthSlider').value);
+            const maxHeight = parseInt(document.getElementById('heightSlider').value);
+            
+            const progress = document.getElementById('progress');
+            const progressBar = document.getElementById('progressBar');
+            const imagePreview = document.getElementById('imagePreview');
+            
+            progress.style.display = 'block';
+            imagePreview.style.display = 'block';
+            imagePreview.innerHTML = '<div style="text-align: center; padding: 20px;">Processing images...</div>';
+            
+            processedImages = [];
+            showStatus('Resizing images...', 'success');
+
+            for (let i = 0; i < selectedFiles.length; i++) {
+                const file = selectedFiles[i];
+                progressBar.style.width = ((i + 1) / selectedFiles.length) * 100 + '%';
+                
+                try {
+                    const resizedBlob = await resizeImage(file, maxWidth, maxHeight, quality);
+                    
+                    processedImages.push({
+                        name: file.name.replace(/\.[^/.]+$/, '_resized.jpg'),
+                        blob: resizedBlob,
+                        originalSize: file.size,
+                        newSize: resizedBlob.size
+                    });
+                } catch (error) {
+                    console.error('Error processing', file.name, error);
+                }
+            }
+
+            displayResults();
+            progress.style.display = 'none';
+            document.getElementById('downloadBtn').style.display = 'block';
+            showStatus('Images resized successfully!', 'success');
+        }
+
+        function displayResults() {
+            let html = '<h3 style="text-align: center; margin-bottom: 20px;">Resized Images:</h3>';
+            
+            processedImages.forEach((img, index) => {
+                const isUnder9MB = img.newSize < 9 * 1024 * 1024;
+                const url = URL.createObjectURL(img.blob);
+                
+                html += `
+                    <div class="image-container">
+                        <img src="${url}" alt="Resized image" class="preview-img">
+                        <div class="image-info">
+                            <div class="info-item"><strong>${img.name}</strong></div>
+                            <div class="info-item">Original: ${formatFileSize(img.originalSize)}</div>
+                            <div class="info-item">Resized: ${formatFileSize(img.newSize)}</div>
+                            <div class="info-item ${isUnder9MB ? 'size-ok' : 'size-warning'}">
+                                ${isUnder9MB ? '✅ Under 9MB!' : '⚠️ Still over 9MB'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('imagePreview').innerHTML = html;
+        }
+
+        function downloadAll() {
+            if (processedImages.length === 0) return;
+            
+            processedImages.forEach((img, index) => {
+                setTimeout(() => {
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(img.blob);
+                    link.download = img.name;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }, index * 500); 
+            });
+            
+            showStatus('Downloads started!', 'success');
+        }
+
+        
+        function showControls() {
+            document.getElementById('controls').style.display = 'block';
+        }
+
+        function hideControls() {
+            document.getElementById('controls').style.display = 'none';
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('downloadBtn').style.display = 'none';
+        }
+
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status-message status-${type}`;
+            statusEl.style.display = 'block';
+        }
+
+        function hideStatus() {
+            document.getElementById('statusMessage').style.display = 'none';
+        }
+
+        // Cleanup when page unloads
+        window.addEventListener('beforeunload', () => {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+            }
+        });
+    </script>
+</body>
+</html>
